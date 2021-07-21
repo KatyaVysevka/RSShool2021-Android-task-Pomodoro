@@ -14,6 +14,8 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private var timerAdapter = TimerAdapter(this)
     private var nextId = 0
     private var currentMinutes: Int = 0
+    private var idTimerStart = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -21,6 +23,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         binding.apply {
             rcView.layoutManager = LinearLayoutManager(applicationContext)
             rcView.adapter = timerAdapter
+            edMinutes.addTextChangedListener(getInputTextWatcher())
             button.setOnClickListener {
             addTimer(currentMinutes)
             }
@@ -43,7 +46,6 @@ class MainActivity : AppCompatActivity(), TimerListener {
         }
         }
 
-
     private fun getInputTextWatcher(): TextWatcher {
         return object: TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -55,23 +57,29 @@ class MainActivity : AppCompatActivity(), TimerListener {
                 else 0
 
             }
-
             override fun afterTextChanged(s: Editable?) {}
         }
     }
 
     private fun addTimer(minutes: Int) {
         val translateMs = (minutes * 60000).toLong()
-        timers.add(Timer(nextId++, translateMs,false))
+        timers.add(Timer(nextId++, translateMs,false, translateMs, 0L))
         timerAdapter.submitList(timers.toList())
     }
 
     override fun start(id: Int) {
+        if(idTimerStart != -1) {
+            val oldTimer = timers.find { it.id == idTimerStart }
+            changeStopwatch(idTimerStart, oldTimer?.currentMs ?: 0, false)
+        }
         changeStopwatch(id, null, true)
+
+        idTimerStart = id
     }
 
     override fun stop(id: Int, currentMs: Long) {
         changeStopwatch(id, currentMs, false)
+        idTimerStart = -1
     }
 
     override fun delete(id: Int) {
@@ -79,11 +87,15 @@ class MainActivity : AppCompatActivity(), TimerListener {
         timerAdapter.submitList(timers.toList())
     }
 
+    override fun timerEnd(id: Int) {
+        idTimerStart = -1
+    }
+
     private fun changeStopwatch(id: Int, currentMs: Long?, isStarted: Boolean) {
         val newTimers = mutableListOf<Timer>()
         timers.forEach {
             if (it.id == id) {
-                newTimers.add(Timer(it.id, currentMs ?: it.currentMs, isStarted))
+                newTimers.add(Timer(it.id, currentMs ?: it.currentMs, isStarted, it.startMs, it.forDifference))
             } else {
                 newTimers.add(it)
             }
@@ -92,6 +104,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         timers.clear()
         timers.addAll(newTimers)
     }
+
     private companion object {
         private const val MAX_TIME_MINUTES = 5999
         private const val NUMBER_EXCEEDS_RANGE = "Слишком большое число"
