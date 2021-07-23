@@ -9,4 +9,5 @@
     <color name="primaryTextColor">#000000</color>
     <color name="hintTextColor">#605D5D</color>
     <color name="white">#FFFFFF</color>
+    <color name="timerEndColor">#8E1717</color>
 </resources>

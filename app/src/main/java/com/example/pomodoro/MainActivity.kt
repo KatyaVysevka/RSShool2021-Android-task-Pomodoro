@@ -1,14 +1,16 @@
 package com.example.pomodoro
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.pomodoro.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(), TimerListener {
+
+class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
     lateinit var binding: ActivityMainBinding
     private val timers = mutableListOf<Timer>()
     private var timerAdapter = TimerAdapter(this)
@@ -18,8 +20,10 @@ class MainActivity : AppCompatActivity(), TimerListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
         binding.apply {
             rcView.layoutManager = LinearLayoutManager(applicationContext)
             rcView.adapter = timerAdapter
@@ -28,6 +32,12 @@ class MainActivity : AppCompatActivity(), TimerListener {
             addTimer(currentMinutes)
             }
         }
+//        lifecycleScope.launch(Dispatchers.Main) {
+//            while (true) {
+//                binding.rcView.text = (System.currentTimeMillis() - startTime).displayTime()
+//                delay(INTERVAL)
+//            }
+//        }
 
     }
 
@@ -38,7 +48,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         }
         if (minutes.isNotEmpty()) {
             if (minutes.toInt() > MAX_TIME_MINUTES) {
-                binding.edMinutes.error = NUMBER_EXCEEDS_RANGE
+                binding.edMinutes.error = "Слишком большое число"
                 binding.button.isEnabled = false
                 return
             }
@@ -105,9 +115,25 @@ class MainActivity : AppCompatActivity(), TimerListener {
         timers.addAll(newTimers)
     }
 
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    fun onAppBackgrounded() {
+        val startIntent = Intent(this, ForegroundService::class.java)
+        startIntent.putExtra(COMMAND_ID, COMMAND_START)
+        startIntent.putExtra(STARTED_TIMER_TIME_MS, currentMinutes)
+        startService(startIntent)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun onAppForegrounded() {
+        val stopIntent = Intent(this, ForegroundService::class.java)
+        stopIntent.putExtra(COMMAND_ID, COMMAND_STOP)
+        startService(stopIntent)
+    }
+
+
     private companion object {
         private const val MAX_TIME_MINUTES = 5999
-        private const val NUMBER_EXCEEDS_RANGE = "Слишком большое число"
+        private const val INTERVAL = 10L
     }
 
 }
