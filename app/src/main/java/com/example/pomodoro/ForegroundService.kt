@@ -6,18 +6,22 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
 import android.net.wifi.WpsInfo.INVALID
 import android.os.Build
+import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
+
 
 class ForegroundService : Service() {
 
     private var isServiceStarted = false
     private var notificationManager: NotificationManager? = null
     private var job: Job? = null
+    private var countDownTimer: CountDownTimer? = null
 
     private val builder by lazy {
         NotificationCompat.Builder(this, CHANNEL_ID)
@@ -72,17 +76,25 @@ class ForegroundService : Service() {
     }
 
     private fun continueTimer(startTime: Long) {
-        job = GlobalScope.launch(Dispatchers.Main) {
-            while (true) {
+        countDownTimer = object: CountDownTimer(startTime, INTERVAL) {
+
+            override fun onTick(millisUntilFinished: Long) {
                 notificationManager?.notify(
                     NOTIFICATION_ID,
-                    getNotification(
-                        (System.currentTimeMillis() - startTime).displayTime().dropLast(3)
-                    )
+                    getNotification(millisUntilFinished.displayTime())
                 )
-                delay(INTERVAL)
             }
-        }
+
+            override fun onFinish() {
+                notificationManager?.notify(
+                    NOTIFICATION_ID,
+                    getNotification(getString(R.string.timer_end))
+                )
+                val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val alarm = RingtoneManager.getRingtone(applicationContext, notification)
+                alarm.play()
+            }
+        }.start()
     }
 
     private fun commandStop() {

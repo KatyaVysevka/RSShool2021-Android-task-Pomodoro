@@ -7,7 +7,8 @@ import androidx.recyclerview.widget.ListAdapter
 import com.example.pomodoro.databinding.TimerItemBinding
 
 
-class TimerAdapter(private val listener: TimerListener): ListAdapter<Timer, TimerHolder> ((itemComparator)){
+class TimerAdapter(private val listener: TimerListener) :
+    ListAdapter<Timer, TimerHolder>((itemComparator)) {
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TimerHolder {

@@ -12,15 +12,23 @@ class TimerHolder(
     private val listener: TimerListener,
 
 
-) : RecyclerView.ViewHolder(binding.root) {
+    ) : RecyclerView.ViewHolder(binding.root) {
     private var timerZ: CountDownTimer? = null
 
     fun bind(timer: Timer) {
         binding.customView.setPeriod(timer.startMs)
         binding.customView.setCurrent(timer.startMs - timer.currentMs)
         binding.timer.text = timer.currentMs.displayTime()
-        if(timer.currentMs == -1L)  {
-            binding.cardView.setBackgroundColor(ContextCompat.getColor(binding.cardView.context, R.color.timerEndColor))
+        if (timer.currentMs == -1L) {
+            binding.cardView.setBackgroundColor(
+                ContextCompat
+                    .getColor(binding.cardView.context, R.color.timerEndColor)
+            )
+        } else {
+            binding.cardView.setBackgroundColor(
+                ContextCompat
+                    .getColor(binding.cardView.context, R.color.white)
+            )
         }
         if (timer.isStarted) {
             startTimer(timer)
@@ -37,10 +45,8 @@ class TimerHolder(
         binding.bStart.setOnClickListener {
             if (timer.isStarted) {
                 listener.stop(timer.id, timer.currentMs)
-
-             } else {
+            } else {
                 listener.start(timer.id)
-
             }
         }
 
@@ -84,7 +90,12 @@ class TimerHolder(
                     timer.currentMs = timer.startMs
                     timer.forDifference = 0L
                     timer.currentMs = -1L
-                    binding.cardView.setBackgroundColor(ContextCompat.getColor(binding.cardView.context, R.color.timerEndColor))
+                    binding.cardView.setBackgroundColor(
+                        ContextCompat.getColor(
+                            binding.cardView.context,
+                            R.color.timerEndColor
+                        )
+                    )
                     listener.timerEnd(timer.id)
                 }
             }
@@ -96,6 +107,7 @@ class TimerHolder(
             }
         }
     }
+
 
     private fun Long.displayTime(): String {
         if (this <= 0L) {

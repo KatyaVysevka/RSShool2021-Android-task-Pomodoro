@@ -20,7 +20,6 @@ class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
@@ -29,22 +28,17 @@ class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
             rcView.adapter = timerAdapter
             edMinutes.addTextChangedListener(getInputTextWatcher())
             button.setOnClickListener {
-            addTimer(currentMinutes)
+                if (edMinutes.text.isEmpty()) binding.edMinutes.error = "Введите число"
+                else addTimer(currentMinutes)
             }
         }
-//        lifecycleScope.launch(Dispatchers.Main) {
-//            while (true) {
-//                binding.rcView.text = (System.currentTimeMillis() - startTime).displayTime()
-//                delay(INTERVAL)
-//            }
-//        }
 
     }
 
     private fun checkEditToOpenButton(minutes: String) {
         binding.apply {
             button.isEnabled =
-                (edMinutes.text?.isNotEmpty() == true && button.error == null )
+                (edMinutes.text?.isNotEmpty() == true && button.error == null)
         }
         if (minutes.isNotEmpty()) {
             if (minutes.toInt() > MAX_TIME_MINUTES) {
@@ -54,31 +48,34 @@ class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
             }
             binding.button.isEnabled = true
         }
-        }
+    }
 
     private fun getInputTextWatcher(): TextWatcher {
-        return object: TextWatcher {
+        return object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val minutesString: String = binding.edMinutes.text.toString()
                 checkEditToOpenButton(minutesString)
-                currentMinutes = if(minutesString.isNotEmpty()) minutesString.toInt()
-                else 0
+                if (minutesString.isNotEmpty()) {
+                    currentMinutes = minutesString.toInt()
+                } else 0
 
             }
+
             override fun afterTextChanged(s: Editable?) {}
         }
     }
 
     private fun addTimer(minutes: Int) {
         val translateMs = (minutes * 60000).toLong()
-        timers.add(Timer(nextId++, translateMs,false, translateMs, 0L))
+        timers.add(Timer(nextId++, translateMs, false, translateMs, 0L))
         timerAdapter.submitList(timers.toList())
+
     }
 
     override fun start(id: Int) {
-        if(idTimerStart != -1) {
+        if (idTimerStart != -1) {
             val oldTimer = timers.find { it.id == idTimerStart }
             changeStopwatch(idTimerStart, oldTimer?.currentMs ?: 0, false)
         }
@@ -105,7 +102,15 @@ class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
         val newTimers = mutableListOf<Timer>()
         timers.forEach {
             if (it.id == id) {
-                newTimers.add(Timer(it.id, currentMs ?: it.currentMs, isStarted, it.startMs, it.forDifference))
+                newTimers.add(
+                    Timer(
+                        it.id,
+                        currentMs ?: it.currentMs,
+                        isStarted,
+                        it.startMs,
+                        it.forDifference
+                    )
+                )
             } else {
                 newTimers.add(it)
             }
@@ -115,25 +120,27 @@ class MainActivity : AppCompatActivity(), TimerListener, LifecycleObserver {
         timers.addAll(newTimers)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun onAppBackgrounded() {
-        val startIntent = Intent(this, ForegroundService::class.java)
-        startIntent.putExtra(COMMAND_ID, COMMAND_START)
-        startIntent.putExtra(STARTED_TIMER_TIME_MS, currentMinutes)
-        startService(startIntent)
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun onAppForegrounded() {
-        val stopIntent = Intent(this, ForegroundService::class.java)
-        stopIntent.putExtra(COMMAND_ID, COMMAND_STOP)
-        startService(stopIntent)
-    }
+//    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+//    fun onAppBackgrounded() {
+//        val currentTimer = timers.find { it.id == idTimerStart }
+//
+//        val startIntent = Intent(this, ForegroundService::class.java)
+//        startIntent.putExtra(COMMAND_ID, COMMAND_START)
+//
+//        startIntent.putExtra(STARTED_TIMER_TIME_MS, currentTimer?.currentMs)
+//        startService(startIntent)
+//    }
+//
+//    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+//    fun onAppForegrounded() {
+//        val stopIntent = Intent(this, ForegroundService::class.java)
+//        stopIntent.putExtra(COMMAND_ID, COMMAND_STOP)
+//        startService(stopIntent)
+//    }
 
 
     private companion object {
         private const val MAX_TIME_MINUTES = 5999
-        private const val INTERVAL = 10L
     }
 
 }
